@@ -1,21 +1,27 @@
 access(all)
 contract FLIXRegistry{
-
-    access(all)
-    resource Registry {
-
-    }
-
+    /// Published
+    ///
+    /// The event that is emitted when a new FLIX is published to a Registry resource.
+    ///
     access(all)
     event Published(id:String, cadenceBodyHash:String, alias:String, registry:Address, removeable:Bool)
 
-
+    /// FLIXStatus
+    ///
+    /// Enum that represents the status of of FLIX
+    ///
     access(all)
-    struct FLIXStatus {
-
-
+    enum FLIXStatus: UInt8 {
+        pub case DRAFT
+        pub case PUBLISHED
+        pub case DEPRECATED
     }
 
+    /// FLIX
+    ///
+    /// Struct that represents a FLIX
+    ///
     access(all)
     struct FLIX {
         access(all) let id: String
@@ -38,11 +44,7 @@ contract FLIXRegistry{
 
         /// Add the flix to the registry and add or update the alias to point to this flix
         access(all) 
-        fun publish(alias:String, flix:FLIX)  {
-            post {
-                emit Published()
-            }
-        }
+        fun publish(alias:String, flix:FLIX)
 
         access(all)
         fun link(alias:String, id:String)
@@ -54,9 +56,62 @@ contract FLIXRegistry{
         fun deprecate(alias:String, status:FLIXStatus)
     }
 
-    resource interface Removeable : Admin{
+    resource interface Removeable {
         access(all)
         fun remove(flix:FLIX)
+    }
+
+    access(all)
+    resource Registry: QueryableFLIX, Admin, Removeable {
+        let flix: {String: FLIX}
+        let aliasMap: {String: String}
+
+        access(all)
+        fun resolve(cadenceBodyHash: String): &FLIXRegistry.FLIX {
+            panic("TODO")
+        }
+
+        access(all)
+        fun lookup(idOrAlias: String): &FLIXRegistry.FLIX {
+            panic("TODO")
+        }
+
+        access(all)
+        fun publish(alias: String, flix: FLIXRegistry.FLIX) {
+            self.flix[flix.id] = flix
+            self.link(alias: alias, id: flix.id)
+
+            emit Published(id: flix.id, cadenceBodyHash: "", alias: alias, registry: self.owner!.address, removeable: false)
+        }
+
+        access(all)
+        fun link(alias: String, id: String) {
+            self.aliasMap[alias] = id
+        }
+
+        access(all)
+        fun unlink(alias: String) {
+            panic("TODO")
+        }
+
+        access(all)
+        fun deprecate(alias: String, status: FLIXRegistry.FLIXStatus) {
+            panic("TODO")
+        }
+    
+        access(all) fun remove(flix: FLIXRegistry.FLIX) {
+            panic("TODO")
+        }
+
+        init() {
+            self.flix = {}
+            self.aliasMap = {}
+        }
+    }
+
+    access(all)
+    fun createRegistry(): @Registry {
+        return <- create Registry()
     }
 
     //split on 0x123/<channel>/<aliasOrId>
